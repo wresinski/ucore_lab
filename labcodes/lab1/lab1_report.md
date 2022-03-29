@@ -364,7 +364,7 @@ switchk2u.tf_esp = (uint32_t)tf + sizeof(struct trapframe) -8;
 ```cpp
 switchk2u.tf_eflags |= FL_IOPL_MASK;
 ```
-* 将临时空间的地址赋给堆栈作之后返回用 
+* 将临时空间的地址赋给堆栈作之后返回用（原来的堆栈空间不够）
 ```cpp
   *((uint32_t *)tf - 1) = (uint32_t)&switchk2u;
 ```
@@ -401,19 +401,20 @@ tf->tf_ds = tf->tf_es = KERNEL_DS;
 ```cpp
 tf->tf_eflags &= ~FL_IOPL_MASK;
 ```
-* 伪造出同特权级调用的trapframe以返回内核态
+* 伪造出同特权级调用的trapframe以返回内核态，位于陷入前的堆栈区
 ```cpp
 switchu2k = (struct trapframe *)(tf->tf_esp - (sizeof(struct trapframe) - 8));
 memmove(switchu2k, tf, sizeof(struct trapframe) - 8);
 ```
-* 修改存在堆栈的地址
+* 修改存在参数的地址，在`popl %esp`时可以顺带将esp调回用户态堆栈
 ```cpp
   *((uint32_t *)tf - 1) = (uint32_t)switchu2k;
 ```
 
 特别注意:
-* 在vectors.S中,除了中断8\~14和17,其余中断硬件均不会压入error code;需要指令`pushl $0`压入一个0来占位
+* 在vectors.S中,除了中断8\~14和17,其余中断硬件均不会压入error code;需要指令`pushl $0`压入一个0来占位，从中断返回时需忽略error code
 * 在trapentry.S中,存在指令`addl $0x8, %esp`来跳过trap number和error code
+* 在用户态陷入内核态时会把esp切换到内核栈，而内核态向内核态陷入时不会做什么；同样只有内核态向用户态返回，才会恢复esp；而不论何种情况，ebp都会恢复陷入前的值
 ***
 ## 扩展练习 Challenge 2
 > 用键盘实现用户模式内核模式的切换
