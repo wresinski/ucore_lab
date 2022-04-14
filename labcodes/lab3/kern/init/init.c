@@ -17,6 +17,10 @@ int kern_init(void) __attribute__((noreturn));
 void grade_backtrace(void);
 static void lab1_switch_test(void);
 
+static void lab1_print_cur_status(void);
+static void lab1_switch_to_user(void);
+static void lab1_switch_to_kernel(void);
+
 int
 kern_init(void) {
     extern char edata[], end[];
@@ -49,7 +53,26 @@ kern_init(void) {
     //lab1_switch_test();
 
     /* do nothing */
-    while (1);
+    while (1) {
+        /*
+        char c = getchar();
+        cprintf("serial [%03d] %c\n", c, c);
+        switch (c) {
+            case '0':
+                cprintf("+++ switch to  user  mode +++\n");
+                lab1_switch_to_user();
+                lab1_print_cur_status();
+                break;
+            case '3':
+                cprintf("+++ switch to kernel mode +++\n");
+                lab1_switch_to_kernel();
+                lab1_print_cur_status();
+                break;
+            default:
+                break;
+        }
+        */
+    }
 }
 
 void __attribute__((noinline))
@@ -93,11 +116,24 @@ lab1_print_cur_status(void) {
 static void
 lab1_switch_to_user(void) {
     //LAB1 CHALLENGE 1 : TODO
+    asm volatile (
+        "sub $0x8, %%esp \n"
+        "int %0 \n"
+        "movl %%ebp, %%esp"
+        :
+        : "i"(T_SWITCH_TOU)
+    );
 }
 
 static void
 lab1_switch_to_kernel(void) {
     //LAB1 CHALLENGE 1 :  TODO
+    asm volatile (
+        "int %0 \n"
+        "movl %%ebp, %%esp \n"
+        :
+        : "i"(T_SWITCH_TOK)
+    );
 }
 
 static void

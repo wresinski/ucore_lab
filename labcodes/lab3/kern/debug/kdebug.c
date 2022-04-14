@@ -305,5 +305,20 @@ print_stackframe(void) {
       *           NOTICE: the calling funciton's return addr eip  = ss:[ebp+4]
       *                   the calling funciton's ebp = ss:[ebp]
       */
+    uint32_t ebp = read_ebp(); //获取本层的ebp
+    uint32_t eip = read_eip(); //通过read_eip()内的ebp+4来或取上一层的eip
+    int i = 0;
+    while (i<STACKFRAME_DEPTH && ebp!=0) {
+
+        uint32_t *args = (uint32_t*)ebp + 2;
+        cprintf("ebp:0x%08x eip:0x%08x args:0x%08x 0x%08x 0x%08x 0x%08x\n",ebp,eip,
+                args[0],args[1],args[2],args[3]);
+        print_debuginfo(eip-1);
+
+        eip = *((uint32_t*)ebp+1); //通过本层的ebp+4来获取上一层的eip
+        ebp = *(uint32_t*)ebp;
+
+        ++i;
+    }
 }
 
